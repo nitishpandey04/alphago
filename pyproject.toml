@@ -1,0 +1,22 @@
+[project]
+name = "alphago"
+version = "0.1.0"
+description = "AlphaGo Zero-style Go playing agent (self-play, batched MCTS, policy+value net)"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "torch>=2.7.0",
+    "numpy>=1.26",
+    "matplotlib>=3.8",
+    "tensorboard>=2.15",
+    "pyyaml>=6.0",
+    "tqdm>=4.66",
+]
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu128" }
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true

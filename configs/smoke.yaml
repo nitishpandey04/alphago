@@ -1,0 +1,40 @@
+# Fast smoke-test config: tiny, validates the whole pipeline in ~1 min.
+game:
+  board_size: 5
+  komi: 3.5
+  max_moves: 60
+model:
+  in_channels: 4
+  num_res_blocks: 4
+  channels: 64
+  value_channels: 8
+  hidden_size: 64
+mcts:
+  num_simulations: 32
+  c_puct: 1.0
+  dirichlet_alpha: 0.03
+  dirichlet_frac: 0.25
+  temp_moves: 6
+selfplay:
+  num_parallel_games: 32
+  target_games: 16
+  resign_threshold: 0.95
+train:
+  buffer_size: 8000
+  batch_size: 128
+  num_steps: 20
+  lr: 0.001
+  l2_weight: 0.0001
+  policy_weight: 1.0
+  value_weight: 1.0
+arena:
+  num_games: 4
+  win_threshold: 0.55
+loop:
+  num_iterations: 2
+  eval_every: 1
+runtime:
+  device: cuda
+  seed: 0
+  checkpoint_dir: checkpoints
+  log_dir: runs

@@ -1,0 +1,57 @@
+# AlphaGo Zero-style agent config.
+# Everything here is tunable; bump board_size to scale up later.
+
+# ---- Game ----
+game:
+  board_size: 5          # NxN board (start small, scale to 7/9 later)
+  komi: 3.5              # white's compensation (half-integer avoids draws)
+  max_moves: 60          # hard cap on moves per game (prevents infinite loops)
+
+# ---- Model ----
+model:
+  in_channels: 4         # input planes (see encoding.py)
+  num_res_blocks: 4      # residual blocks in the trunk
+  channels: 64           # conv filter width
+  value_channels: 8      # filters in value head conv
+  hidden_size: 64        # value head FC size
+
+# ---- MCTS ----
+mcts:
+  num_simulations: 64    # MCTS rollouts per move
+  c_puct: 1.0            # PUCT exploration constant
+  dirichlet_alpha: 0.03  # root prior noise (Go: ~0.03 * 361/N^2 heuristic)
+  dirichlet_frac: 0.25   # weight of dirichlet noise at root
+  temp_moves: 6          # use temperature=1 for first N moves of a game, then ->0 (greedy)
+
+# ---- Self-play ----
+selfplay:
+  num_parallel_games: 128  # concurrent games batched through the GPU (increase to fill VRAM)
+  target_games: 256        # games generated per self-play round
+  resign_threshold: 0.95   # skip (not used yet); reserved
+
+# ---- Training ----
+train:
+  buffer_size: 40000      # max samples retained (positions, not games)
+  batch_size: 256          # minibatch per gradient step
+  num_steps: 100           # gradient steps per training round
+  lr: 0.001                # Adam learning rate
+  l2_weight: 0.0001        # L2 regularization (also weight_decay on Adam)
+  policy_weight: 1.0       # weight on policy cross-entropy
+  value_weight: 1.0        # weight on value MSE
+
+# ---- Arena (eval new vs best) ----
+arena:
+  num_games: 20            # games to evaluate candidate vs best
+  win_threshold: 0.55      # candidate must beat best by this fraction to be promoted
+
+# ---- Loop ----
+loop:
+  num_iterations: 100      # self-play -> train -> arena rounds
+  eval_every: 1            # run arena every N iterations
+
+# ---- Runtime ----
+runtime:
+  device: cuda             # cuda | cpu
+  seed: 0
+  checkpoint_dir: checkpoints
+  log_dir: runs
