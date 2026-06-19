@@ -388,9 +388,36 @@ game per setting would be far too noisy to see the trend, which is why each
 point averages 16 randomized-opening games. The takeaway: **on a small board,
 first-move advantage dominates a surprisingly wide range of search asymmetry.**
 
-> **Coming soon:** the same sweep with **White = 128** simulations, to show how
-> the crossover point *shifts* as the stronger side searches deeper. Reproduce
-> any level yourself with `--white-sims <N>`.
+### Result: White = 128 simulations/move
+
+Doubling White's search to 128 sims:
+
+![Handicap study, White fixed at 128 sims](study/handicap_white128.png)
+
+### Side-by-side: how a stronger White shifts the handicap
+
+![Comparison of White=64 vs White=128 handicap curves](study/handicap_comparison.png)
+
+Here's the interesting twist — the two metrics tell different stories:
+
+- **Win-rate crossover barely moves: ~5 sims (White=64) → ~6 sims (White=128).**
+  Winning is binary, and Black's first-move advantage is so structural that even
+  a handful of simulations is enough to win *more often than not*, regardless of
+  whether White searches 64 or 128. Doubling White's search buys almost nothing
+  on the "who wins" axis.
+- **Score margin shifts ~3×: even point ~8 sims (White=64) → ~24 sims
+  (White=128).** *By how much* Black wins or loses is far more sensitive. A
+  deeper-searching White holds a points deficit over Black across a much wider
+  range — in the comparison's right panel, the red (128) curve sits clearly
+  below the blue (64) curve through the contested middle.
+
+In short: **on 5×5, extra search makes White lose by less, not win more often.**
+The first move is worth so much that flipping the *result* requires reducing
+Black to near-random play — but the *margin* responds smoothly to search depth.
+
+> The curves are deliberately noisy (16 games/point); the trend is the message,
+> not any single wobble. Reproduce or refine any level with
+> `uv run python -m scripts.handicap_study --white-sims <N> --games <M>`.
 
 ---
 
