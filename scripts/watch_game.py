@@ -42,7 +42,9 @@ def main():
     ap.add_argument("--config", default="configs/default.yaml")
     ap.add_argument("--black", default="checkpoints/best.pt")
     ap.add_argument("--white", default="checkpoints/best.pt")
-    ap.add_argument("--sims", type=int, default=None)
+    ap.add_argument("--sims", type=int, default=None, help="MCTS sims for both sides")
+    ap.add_argument("--black-sims", type=int, default=None, help="override sims for Black")
+    ap.add_argument("--white-sims", type=int, default=None, help="override sims for White")
     ap.add_argument("--save-pngs", default=None, help="directory to save per-move PNGs")
     args = ap.parse_args()
 
@@ -52,7 +54,10 @@ def main():
     net_b = load_net(args.black, cfg, device)
     net_w = load_net(args.white, cfg, device)
     rng = np.random.default_rng(0)
-    sims = args.sims or cfg["mcts"]["num_simulations"]
+    default_sims = args.sims or cfg["mcts"]["num_simulations"]
+    sims_b = args.black_sims or default_sims
+    sims_w = args.white_sims or default_sims
+    print(f"Black: {sims_b} sims/move | White: {sims_w} sims/move")
 
     if args.save_pngs:
         os.makedirs(args.save_pngs, exist_ok=True)
@@ -63,6 +68,7 @@ def main():
     print(ascii_board(board))
     while not board.is_terminal() and move < cfg["game"]["max_moves"]:
         net = net_b if board.to_move == BLACK else net_w
+        sims = sims_b if board.to_move == BLACK else sims_w
         _, actions = search(
             [board], net, device,
             num_simulations=sims,
