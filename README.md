@@ -29,6 +29,7 @@ evaluation — runs on the GPU with batched leaf evaluations.
 - [Training](#training)
 - [Playing against the agent](#playing-against-the-agent)
 - [Watching games](#watching-games)
+- [The handicap study: how big is the first-move advantage?](#the-handicap-study-how-big-is-the-first-move-advantage)
 - [Configuration reference](#configuration-reference)
 - [Scaling to bigger boards](#scaling-to-bigger-boards)
 - [Performance & GPU notes](#performance--gpu-notes)
@@ -200,7 +201,8 @@ alphago/
 └── scripts/
     ├── train_main.py         # the training loop (self-play → train → arena → ckpt)
     ├── play_human.py         # play against the agent in the terminal
-    └── watch_game.py         # watch a self-play / eval game move-by-move
+    ├── watch_game.py         # watch a self-play / eval game move-by-move
+    └── handicap_study.py     # sweep per-side MCTS sims; plot win-rate vs handicap
 ```
 
 ---
@@ -325,6 +327,70 @@ uv run python -m scripts.watch_game --black checkpoints/best_iter0.pt --white ch
 # dump a PNG per move
 uv run python -m scripts.watch_game --save-pngs frames/
 ```
+
+**Handicapping a side without a second network.** `--black-sims` and
+`--white-sims` give each player a different MCTS simulation budget from the
+*same* checkpoint — more simulations means deeper search and stronger play. This
+lets you pit "dumber Black" against "smarter White" to probe how search depth
+trades off against Go's first-move advantage:
+
+```bash
+# White thinks 2× harder than Black, same weights
+uv run python -m scripts.watch_game --black-sims 32 --white-sims 64 | tail -1
+```
+
+---
+
+## The handicap study: how big is the first-move advantage?
+
+On a 5×5 board, **Black (who moves first) has a large, structural advantage** —
+small boards make the opening move extremely valuable, and komi only partly
+compensates. With equal search, self-play games are *not* a coin flip: this
+agent wins as Black ~**97%** of the time. (This is exactly why the training
+[arena](#the-arena-promotion-gate) swaps colors — to cancel the bias when
+comparing two networks.)
+
+That raises a fun question: **how badly do we have to handicap Black's search
+before White's deeper thinking actually overcomes the first-move edge?** Because
+both players can run from the *same checkpoint* at different simulation counts,
+we can measure it directly. `scripts/handicap_study.py` fixes White's budget,
+sweeps Black's over a fine grid, plays many randomized-opening games at each
+point, and plots Black's win-rate and mean score margin:
+
+```bash
+uv run python -m scripts.handicap_study --white-sims 64 --games 16
+# -> study/handicap_white64.png  +  study/handicap_white64.csv
+```
+
+### Result: White = 64 simulations/move
+
+![Handicap study, White fixed at 64 sims](study/handicap_white64.png)
+
+The crossover is **startlingly low**. Against White's 64 simulations, Black
+reaches a break-even win-rate at only **~5 simulations** — a **~13× search
+deficit** is needed just to bring the game back to even. Black only *loses the
+majority* once its search collapses to **≤4 sims** (essentially playing its raw
+policy with almost no lookahead, win-rate `0–31%`). Give Black even a handful of
+simulations and the first-move advantage reasserts itself; by ~24+ sims Black is
+back to winning 80–100%.
+
+| Black sims vs White's 64 | Black win-rate | mean score (Black) |
+|---|---|---|
+| 1  | 0%   | −8.6 |
+| 4  | 25%  | −8.9 |
+| **~5** | **~50% (crossover)** | **~0** |
+| 8  | 75%  | +4.8 |
+| 16 | 75%  | +1.3 |
+| 64 (equal) | 100% | +7.8 |
+
+The score margins carry large error bars (±5–14 points) — a single deterministic
+game per setting would be far too noisy to see the trend, which is why each
+point averages 16 randomized-opening games. The takeaway: **on a small board,
+first-move advantage dominates a surprisingly wide range of search asymmetry.**
+
+> **Coming soon:** the same sweep with **White = 128** simulations, to show how
+> the crossover point *shifts* as the stronger side searches deeper. Reproduce
+> any level yourself with `--white-sims <N>`.
 
 ---
 

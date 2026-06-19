@@ -7,3 +7,7 @@ runs/
 *.pt
 *.pth
 .ipynb_checkpoints/
+
+# Study outputs: keep the graphs/CSVs (referenced in the README), drop run logs.
+!study/*.png
+study/*.log
