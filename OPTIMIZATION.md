@@ -51,6 +51,35 @@ is competitive, run inference *on CPU inside each worker* — then it's
 embarrassingly parallel with zero GPU coordination. Move to (b) only if GPU
 contention shows up as the bottleneck.
 
+### How the workers synchronize
+
+Two models; build the first.
+
+**Model 1 — synchronous scatter–gather (build this first).** Parallelize only
+the self-play phase; keep the rest of the loop unchanged:
+
+1. **Scatter** — copy `best_net`'s weights (~1.3 MB `state_dict`) to N worker
+   processes, each with a distinct seed.
+2. **Work** — each worker independently plays games on its own core (the
+   existing `generate_games`); no worker talks to another.
+3. **Barrier** — the parent waits for all workers to finish (one sync point).
+4. **Gather** — the parent collects all samples, `buffer.add()`s them, and
+   trains — single-process.
+
+The buffer and training stay in the parent, so workers share **no mutable
+state** → no locks, reproducible. Only weights (out) and sample arrays (back)
+cross process boundaries. Catch: the barrier makes the phase as slow as the
+slowest worker (E-cores < P-cores). **Fix: hand out many small game-batch tasks**
+(e.g. "play 4 games") so fast cores grab more and everyone finishes together.
+
+**Model 2 — asynchronous actors + learner (later, only if needed).** Workers
+never stop (always playing from the latest weights); a separate learner
+continuously trains from a **shared replay buffer** and republishes weights.
+Removes the barrier, pins CPU+GPU at 100%, but needs real concurrency machinery
+(a locked/shared-memory buffer with many writers + one reader, plus versioned
+weight handoff and staleness tolerance). Graduate here only if Model 1's barrier
+waits prove to be the bottleneck.
+
 ### Expected speedup on the target CPU (Intel Core Ultra 7 265K)
 
 8 P-cores + 12 E-cores = **20 threads, no hyperthreading**. E-cores run ~60–70%
