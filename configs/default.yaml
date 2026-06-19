@@ -47,7 +47,7 @@ arena:
 # ---- Loop ----
 loop:
   num_iterations: 100      # self-play -> train -> arena rounds
-  eval_every: 1            # run arena every N iterations
+  eval_every: 5            # run arena every N iterations
 
 # ---- Runtime ----
 runtime:
