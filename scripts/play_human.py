@@ -31,7 +31,7 @@ def parse_move(text: str, size: int):
         return size * size
     if len(text) < 2:
         return None
-    col = text[0]
+    col = text[0].upper()
     row = text[1:]
     if col not in _COLS[:size] or not row.isdigit():
         return None
