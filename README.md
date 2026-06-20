@@ -70,7 +70,7 @@ randomized-opening games at each point, and plots Black's win-rate and mean scor
 margin:
 
 ```bash
-uv run python -m scripts.handicap_study --white-sims 64 --games 16
+uv run python -m scripts.handicap_study --white-sims 64 --games 48
 # -> study/handicap_white64.png  +  study/handicap_white64.csv
 ```
 
@@ -79,18 +79,18 @@ uv run python -m scripts.handicap_study --white-sims 64 --games 16
 ![Handicap study, White fixed at 64 sims](study/handicap_white64.png)
 
 The crossover is **startlingly low**. Against White's 64 simulations, Black
-reaches a break-even win-rate at only **~5 simulations** — a **~13× search
-deficit** — and only *loses the majority* once its search collapses to **≤4
-sims** (essentially raw policy with no lookahead). Give Black even a handful of
-simulations and the first-move advantage reasserts itself.
+reaches a break-even win-rate at only **~2 simulations** — a **~32× search
+deficit** — and only *loses the majority* when reduced to **1 sim** (raw policy,
+no lookahead at all). A single simulation of search is enough to claw back to
+even; give Black a handful and the first-move advantage takes over.
 
 | Black sims vs White's 64 | Black win-rate | mean score (Black) |
 |---|---|---|
 | 1  | 0%   | −8.6 |
-| 4  | 25%  | −8.9 |
-| **~5** | **~50% (crossover)** | **~0** |
-| 8  | 75%  | +4.8 |
-| 64 (equal) | 100% | +7.8 |
+| **~2** | **~52% (win-rate crossover)** | −2.2 |
+| ~6 | 62%  | **~0 (score even)** |
+| 8  | 77%  | +2.8 |
+| 64 (equal) | 96%  | +7.7 |
 
 ### White = 128 simulations/move, and the side-by-side
 
@@ -100,10 +100,10 @@ simulations and the first-move advantage reasserts itself.
 
 Doubling White's search splits the two metrics:
 
-- **Win-rate crossover barely moves: ~5 → ~6 sims.** Winning is binary, and
-  Black's first-move advantage is so structural that a few simulations win *more
-  often than not* regardless of how hard White searches.
-- **Score-margin even point shifts ~3×: ~8 → ~24 sims.** *By how much* Black
+- **Win-rate crossover barely moves: ~2 → ~3 sims.** Winning is binary, and
+  Black's first-move advantage is so structural that a couple of simulations win
+  *more often than not* regardless of how hard White searches.
+- **Score-margin even point shifts ~3×: ~6 → ~20 sims.** *By how much* Black
   wins or loses is far more sensitive — a deeper White holds a points deficit
   over Black across a much wider range (red sits below blue in the comparison).
 
@@ -112,8 +112,8 @@ often*.** The first move is worth so much that flipping the *result* requires
 reducing Black to near-random play, while the *margin* responds smoothly to
 search depth.
 
-> The curves are deliberately noisy (16 games/point); the trend is the message,
-> not any single wobble. Reproduce or refine any level with
+> Each point averages 48 randomized-opening games; the curves still wobble, so
+> read the trend, not any single point. Reproduce or refine any level with
 > `uv run python -m scripts.handicap_study --white-sims <N> --games <M>`.
 
 ---
